@@ -47,8 +47,8 @@ class NaclBox_Test: XCTestCase {
     override class var defaultTestSuite: XCTestSuite {
         
         let testSuite = XCTestSuite(name: NSStringFromClass(self))
-        
-        let fileURL = Bundle.module.url(forResource: "BoxTestData", withExtension: "json")
+        let testBundle = Bundle(for: NaclSecretbox_Tests.self)
+        let fileURL = testBundle.url(forResource: "BoxTestData", withExtension: "json")
         let fileData = try! Data(contentsOf: fileURL!)
         let json = try! JSONSerialization.jsonObject(with: fileData, options: [])
         let arrayOfData = json as! [Array<String>]
