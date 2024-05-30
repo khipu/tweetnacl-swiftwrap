@@ -16,5 +16,5 @@ Pod::Spec.new do |s|
   s.preserve_paths = 'Sources/module.map'
   s.frameworks  = "Foundation"
   s.xcconfig = { 'SWIFT_INCLUDE_PATHS' => '$(PODS_ROOT)/KHTweetNacl/Sources' }
-  s.swift-version = "5.0"
+  s.swift_version = "5.0"
 end
