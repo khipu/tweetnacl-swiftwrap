@@ -58,8 +58,9 @@ public struct NaclUtil {
         #else
 
         var randomData = Data(count: count)
-        let result = randomData.withUnsafeMutableBytes {
-            return SecRandomCopyBytes(kSecRandomDefault, count, $0)
+
+        let result = randomData.withUnsafeMutableBytes { (pointer: UnsafeMutableRawBufferPointer) in
+            return SecRandomCopyBytes(kSecRandomDefault, count, pointer.baseAddress!)
         }
         guard result == errSecSuccess else {
             throw NaclUtilError.internalError
@@ -72,10 +73,14 @@ public struct NaclUtil {
     
     public static func hash(message: Data) throws -> Data {
         var hash = Data(count: Constants.Hash.bytes)
-        let r = hash.withUnsafeMutableBytes { (hashPointer: UnsafeMutablePointer<UInt8>) -> Int32 in
-            return message.withUnsafeBytes({ (messagePointer: UnsafePointer<UInt8>) -> Int32 in
-                return CTweetNacl.crypto_hash_sha512_tweet(hashPointer, messagePointer, UInt64(message.count))
-            })
+        let r = hash.withUnsafeMutableBytes { (hashPointer: UnsafeMutableRawBufferPointer) -> Int32 in
+            return message.withUnsafeBytes { (messagePointer: UnsafeRawBufferPointer) -> Int32 in
+                return CTweetNacl.crypto_hash_sha512_tweet(
+                    hashPointer.baseAddress!.assumingMemoryBound(to: UInt8.self),
+                    messagePointer.baseAddress!.assumingMemoryBound(to: UInt8.self),
+                    UInt64(message.count)
+                )
+            }
         }
         
         if r != 0 {
@@ -94,10 +99,13 @@ public struct NaclUtil {
             throw NaclUtilError.badKeySize
         }
         
-        let r = x.withUnsafeBytes { (xPointer: UnsafePointer<UInt8>) -> Int32 in
-            return y.withUnsafeBytes({ (yPointer: UnsafePointer<UInt8>) -> Int32 in
-                return CTweetNacl.crypto_verify_32_tweet(xPointer, yPointer)
-            })
+        let r = x.withUnsafeBytes { (xPointer: UnsafeRawBufferPointer) -> Int32 in
+            return y.withUnsafeBytes { (yPointer: UnsafeRawBufferPointer) -> Int32 in
+                return CTweetNacl.crypto_verify_32_tweet(
+                    xPointer.baseAddress!.assumingMemoryBound(to: UInt8.self),
+                    yPointer.baseAddress!.assumingMemoryBound(to: UInt8.self)
+                )
+            }
         }
         
         return r == 0
@@ -116,11 +124,14 @@ struct NaclWrapper {
     static func crypto_box_keypair(secretKey sk: Data) throws -> (publicKey: Data, secretKey: Data) {
         var pk = Data(count: Constants.Box.secretKeyBytes)
         
-        let result = pk.withUnsafeMutableBytes({ (pkPointer: UnsafeMutablePointer<UInt8>) -> Int32 in
-            return sk.withUnsafeBytes({ (skPointer: UnsafePointer<UInt8>) -> Int32 in
-                return CTweetNacl.crypto_scalarmult_curve25519_tweet_base(pkPointer, skPointer)
-            })
-        })
+        let result = pk.withUnsafeMutableBytes { (pkPointer: UnsafeMutableRawBufferPointer) -> Int32 in
+            return sk.withUnsafeBytes { (skPointer: UnsafeRawBufferPointer) -> Int32 in
+                return CTweetNacl.crypto_scalarmult_curve25519_tweet_base(
+                    pkPointer.baseAddress!.assumingMemoryBound(to: UInt8.self),
+                    skPointer.baseAddress!.assumingMemoryBound(to: UInt8.self)
+                )
+            }
+        }
         
         if result != 0 {
             throw NaclWrapperError.internalError
@@ -140,11 +151,14 @@ struct NaclWrapper {
         var sk = Data(count: Constants.Sign.secretKeyBytes)
         sk.replaceSubrange(0..<Constants.Sign.publicKeyBytes, with: secretKey.subdata(in: 0..<Constants.Sign.publicKeyBytes))
         
-        let result = pk.withUnsafeMutableBytes({ (pkPointer: UnsafeMutablePointer<UInt8>) -> Int32 in
-            return sk.withUnsafeMutableBytes({ (skPointer: UnsafeMutablePointer<UInt8>) -> Int32 in
-                return CTweetNacl.crypto_sign_ed25519_tweet_keypair(pkPointer, skPointer)
-            })
-        })
+        let result = pk.withUnsafeMutableBytes { (pkPointer: UnsafeMutableRawBufferPointer) -> Int32 in
+            return sk.withUnsafeMutableBytes { (skPointer: UnsafeMutableRawBufferPointer) -> Int32 in
+                return CTweetNacl.crypto_sign_ed25519_tweet_keypair(
+                    pkPointer.baseAddress!.assumingMemoryBound(to: UInt8.self),
+                    skPointer.baseAddress!.assumingMemoryBound(to: UInt8.self)
+                )
+            }
+        }
         
         if result != 0 {
             throw NaclWrapperError.internalError
@@ -171,14 +185,20 @@ public struct NaclSecretBox {
         
         var c = Data(count: m.count)
         
-        let result = c.withUnsafeMutableBytes { (cPointer: UnsafeMutablePointer<UInt8>) -> Int32 in
-            return m.withUnsafeBytes({ (mPointer: UnsafePointer<UInt8>) -> Int32 in
-                return nonce.withUnsafeBytes({ (noncePointer: UnsafePointer<UInt8>) -> Int32 in
-                    return key.withUnsafeBytes({ (keyPointer: UnsafePointer<UInt8>) -> Int32 in
-                        return CTweetNacl.crypto_secretbox_xsalsa20poly1305_tweet(cPointer, mPointer, UInt64(m.count), noncePointer, keyPointer)
-                    })
-                })
-            })
+        let result = c.withUnsafeMutableBytes { (cPointer: UnsafeMutableRawBufferPointer) -> Int32 in
+            return m.withUnsafeBytes { (mPointer: UnsafeRawBufferPointer) -> Int32 in
+                return nonce.withUnsafeBytes { (noncePointer: UnsafeRawBufferPointer) -> Int32 in
+                    return key.withUnsafeBytes { (keyPointer: UnsafeRawBufferPointer) -> Int32 in
+                        return CTweetNacl.crypto_secretbox_xsalsa20poly1305_tweet(
+                            cPointer.baseAddress!.assumingMemoryBound(to: UInt8.self),
+                            mPointer.baseAddress!.assumingMemoryBound(to: UInt8.self),
+                            UInt64(m.count),
+                            noncePointer.baseAddress!.assumingMemoryBound(to: UInt8.self),
+                            keyPointer.baseAddress!.assumingMemoryBound(to: UInt8.self)
+                        )
+                    }
+                }
+            }
         }
         
         if result != 0 {
@@ -196,14 +216,20 @@ public struct NaclSecretBox {
         
         var m = Data(count: c.count)
         
-        let result = m.withUnsafeMutableBytes { (mPointer: UnsafeMutablePointer<UInt8>) -> Int32 in
-            return c.withUnsafeBytes({ (cPointer: UnsafePointer<UInt8>) -> Int32 in
-                return nonce.withUnsafeBytes({ (noncePointer: UnsafePointer<UInt8>) -> Int32 in
-                    return key.withUnsafeBytes({ (keyPointer: UnsafePointer<UInt8>) -> Int32 in
-                        return CTweetNacl.crypto_secretbox_xsalsa20poly1305_tweet_open(mPointer, cPointer, UInt64(c.count), noncePointer, keyPointer)
-                    })
-                })
-            })
+        let result = m.withUnsafeMutableBytes { (mPointer: UnsafeMutableRawBufferPointer) -> Int32 in
+            return c.withUnsafeBytes { (cPointer: UnsafeRawBufferPointer) -> Int32 in
+                return nonce.withUnsafeBytes { (noncePointer: UnsafeRawBufferPointer) -> Int32 in
+                    return key.withUnsafeBytes { (keyPointer: UnsafeRawBufferPointer) -> Int32 in
+                        return CTweetNacl.crypto_secretbox_xsalsa20poly1305_tweet_open(
+                            mPointer.baseAddress!.assumingMemoryBound(to: UInt8.self),
+                            cPointer.baseAddress!.assumingMemoryBound(to: UInt8.self),
+                            UInt64(c.count),
+                            noncePointer.baseAddress!.assumingMemoryBound(to: UInt8.self),
+                            keyPointer.baseAddress!.assumingMemoryBound(to: UInt8.self)
+                        )
+                    }
+                }
+            }
         }
         
         if result != 0 {
@@ -234,12 +260,16 @@ public struct NaclScalarMult {
         
         var q = Data(count: Constants.Scalarmult.bytes)
         
-        let result = q.withUnsafeMutableBytes { (qPointer: UnsafeMutablePointer<UInt8>) -> Int32 in
-            return n.withUnsafeBytes({ (nPointer: UnsafePointer<UInt8>) -> Int32 in
-                return p.withUnsafeBytes({ (pPointer: UnsafePointer<UInt8>) -> Int32 in
-                    return CTweetNacl.crypto_scalarmult_curve25519_tweet(qPointer, nPointer, pPointer)
-                })
-            })
+        let result = q.withUnsafeMutableBytes { (qPointer: UnsafeMutableRawBufferPointer) -> Int32 in
+            return n.withUnsafeBytes { (nPointer: UnsafeRawBufferPointer) -> Int32 in
+                return p.withUnsafeBytes { (pPointer: UnsafeRawBufferPointer) -> Int32 in
+                    return CTweetNacl.crypto_scalarmult_curve25519_tweet(
+                        qPointer.baseAddress!.assumingMemoryBound(to: UInt8.self),
+                        nPointer.baseAddress!.assumingMemoryBound(to: UInt8.self),
+                        pPointer.baseAddress!.assumingMemoryBound(to: UInt8.self)
+                    )
+                }
+            }
         }
         
         if result != 0 {
@@ -256,10 +286,13 @@ public struct NaclScalarMult {
         
         var q = Data(count: Constants.Scalarmult.bytes)
         
-        let result = q.withUnsafeMutableBytes { (qPointer: UnsafeMutablePointer<UInt8>) -> Int32 in
-            return n.withUnsafeBytes({ (nPointer: UnsafePointer<UInt8>) -> Int32 in
-                return CTweetNacl.crypto_scalarmult_curve25519_tweet_base(qPointer, nPointer)
-            })
+        let result = q.withUnsafeMutableBytes { (qPointer: UnsafeMutableRawBufferPointer) -> Int32 in
+            return n.withUnsafeBytes { (nPointer: UnsafeRawBufferPointer) -> Int32 in
+                return CTweetNacl.crypto_scalarmult_curve25519_tweet_base(
+                    qPointer.baseAddress!.assumingMemoryBound(to: UInt8.self),
+                    nPointer.baseAddress!.assumingMemoryBound(to: UInt8.self)
+                )
+            }
         }
         
         if result != 0 {
@@ -290,12 +323,16 @@ public struct NaclBox {
         
         var k = Data(count: Constants.Box.beforeNMBytes)
         
-        let result = k.withUnsafeMutableBytes { (kPointer: UnsafeMutablePointer<UInt8>) -> Int32 in
-            return publicKey.withUnsafeBytes({ (pkPointer: UnsafePointer<UInt8>) -> Int32 in
-                return secretKey.withUnsafeBytes({ (skPointer: UnsafePointer<UInt8>) -> Int32 in
-                    return CTweetNacl.crypto_box_curve25519xsalsa20poly1305_tweet_beforenm(kPointer, pkPointer, skPointer)
-                })
-            })
+        let result = k.withUnsafeMutableBytes { (kPointer: UnsafeMutableRawBufferPointer) -> Int32 in
+            return publicKey.withUnsafeBytes { (pkPointer: UnsafeRawBufferPointer) -> Int32 in
+                return secretKey.withUnsafeBytes { (skPointer: UnsafeRawBufferPointer) -> Int32 in
+                    return CTweetNacl.crypto_box_curve25519xsalsa20poly1305_tweet_beforenm(
+                        kPointer.baseAddress!.assumingMemoryBound(to: UInt8.self),
+                        pkPointer.baseAddress!.assumingMemoryBound(to: UInt8.self),
+                        skPointer.baseAddress!.assumingMemoryBound(to: UInt8.self)
+                    )
+                }
+            }
         }
         
         if result != 0 {
@@ -344,12 +381,18 @@ public struct NaclSign {
         
         let tmpLength = UnsafeMutablePointer<UInt64>.allocate(capacity: 1)
         
-        let result = signedMessage.withUnsafeMutableBytes { (signedMessagePointer: UnsafeMutablePointer<UInt8>) -> Int32 in
-            return message.withUnsafeBytes({ (messagePointer: UnsafePointer<UInt8>) -> Int32 in
-                return secretKey.withUnsafeBytes({ (secretKeyPointer: UnsafePointer<UInt8>) -> Int32 in
-                    return CTweetNacl.crypto_sign_ed25519_tweet(signedMessagePointer, tmpLength, messagePointer, UInt64(message.count), secretKeyPointer)
-                })
-            })
+        let result = signedMessage.withUnsafeMutableBytes { (signedMessagePointer: UnsafeMutableRawBufferPointer) -> Int32 in
+            return message.withUnsafeBytes { (messagePointer: UnsafeRawBufferPointer) -> Int32 in
+                return secretKey.withUnsafeBytes { (secretKeyPointer: UnsafeRawBufferPointer) -> Int32 in
+                    return CTweetNacl.crypto_sign_ed25519_tweet(
+                        signedMessagePointer.baseAddress!.assumingMemoryBound(to: UInt8.self),
+                        tmpLength,
+                        messagePointer.baseAddress!.assumingMemoryBound(to: UInt8.self),
+                        UInt64(message.count),
+                        secretKeyPointer.baseAddress!.assumingMemoryBound(to: UInt8.self)
+                    )
+                }
+            }
         }
         
         if result != 0 {
@@ -367,12 +410,18 @@ public struct NaclSign {
         var tmp = Data(count: signedMessage.count)
         let tmpLength = UnsafeMutablePointer<UInt64>.allocate(capacity: 1)
         
-        let result = tmp.withUnsafeMutableBytes { (tmpPointer: UnsafeMutablePointer<UInt8>) -> Int32 in
-            return signedMessage.withUnsafeBytes({ (signMessagePointer: UnsafePointer<UInt8>) -> Int32 in
-                return publicKey.withUnsafeBytes({ (publicKeyPointer: UnsafePointer<UInt8>) -> Int32 in
-                    return CTweetNacl.crypto_sign_ed25519_tweet_open(tmpPointer, tmpLength, signMessagePointer, UInt64(signedMessage.count), publicKeyPointer)
-                })
-            })
+        let result = tmp.withUnsafeMutableBytes { (tmpPointer: UnsafeMutableRawBufferPointer) -> Int32 in
+            return signedMessage.withUnsafeBytes { (signMessagePointer: UnsafeRawBufferPointer) -> Int32 in
+                return publicKey.withUnsafeBytes { (publicKeyPointer: UnsafeRawBufferPointer) -> Int32 in
+                    return CTweetNacl.crypto_sign_ed25519_tweet_open(
+                        tmpPointer.baseAddress!.assumingMemoryBound(to: UInt8.self),
+                        tmpLength,
+                        signMessagePointer.baseAddress!.assumingMemoryBound(to: UInt8.self),
+                        UInt64(signedMessage.count),
+                        publicKeyPointer.baseAddress!.assumingMemoryBound(to: UInt8.self)
+                    )
+                }
+            }
         }
         
         if result != 0 {
@@ -408,12 +457,18 @@ public struct NaclSign {
         
         let tmpLength = UnsafeMutablePointer<UInt64>.allocate(capacity: 1)
         
-        let result = m.withUnsafeMutableBytes { (mPointer: UnsafeMutablePointer<UInt8>) -> Int32 in
-            return sm.withUnsafeBytes({ (smPointer: UnsafePointer<UInt8>) -> Int32 in
-                return publicKey.withUnsafeBytes({ (publicKeyPointer: UnsafePointer<UInt8>) -> Int32 in
-                    return CTweetNacl.crypto_sign_ed25519_tweet_open(mPointer, tmpLength, smPointer, UInt64(sm.count), publicKeyPointer)
-                })
-            })
+        let result = m.withUnsafeMutableBytes { (mPointer: UnsafeMutableRawBufferPointer) -> Int32 in
+            return sm.withUnsafeBytes { (smPointer: UnsafeRawBufferPointer) -> Int32 in
+                return publicKey.withUnsafeBytes { (publicKeyPointer: UnsafeRawBufferPointer) -> Int32 in
+                    return CTweetNacl.crypto_sign_ed25519_tweet_open(
+                        mPointer.baseAddress!.assumingMemoryBound(to: UInt8.self),
+                        tmpLength,
+                        smPointer.baseAddress!.assumingMemoryBound(to: UInt8.self),
+                        UInt64(sm.count),
+                        publicKeyPointer.baseAddress!.assumingMemoryBound(to: UInt8.self)
+                    )
+                }
+            }
         }
         
         return result == 0
