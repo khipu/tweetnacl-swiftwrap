@@ -40,8 +40,6 @@ jobs:
           file_to_build: ${{ steps.find-file-to-build.outputs.file_to_build }}
           filetype_parameter: ${{ steps.find-file-to-build.outputs.filetype_parameter }}
         run: |
-          cd Example
-          pod install
           xcodebuild build-for-testing -scheme "$scheme" -"$filetype_parameter" "$file_to_build" -destination "platform=$platform,OS=$device_os,name=$device_name"
 
       - name: Test
@@ -53,5 +51,4 @@ jobs:
           file_to_build: ${{ steps.find-file-to-build.outputs.file_to_build }}
           filetype_parameter: ${{ steps.find-file-to-build.outputs.filetype_parameter }}
         run: |
-          cd Example
           xcodebuild test-without-building -scheme "$scheme" -"$filetype_parameter" "$file_to_build" -destination "platform=$platform,OS=$device_os,name=$device_name"
