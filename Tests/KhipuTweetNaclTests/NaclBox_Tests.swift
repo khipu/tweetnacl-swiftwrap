@@ -1,19 +1,19 @@
 //
-//  NaclSecretbox_Tests.swift
-//  TweetnaclSwift
+//  NaclBox_Tests.swift
+//  NaclBox_Tests
 //
-//  Created by Anh Nguyen on 12/14/16.
+//  Created by Anh Nguyen on 12/12/16.
 //  Copyright © 2016 Bitmark. All rights reserved.
 //
 
-import Foundation
-
 import XCTest
-@testable import TweetNacl
+@testable import KhipuTweetNacl
 
-class NaclSecretbox_Tests: XCTestCase {
+class NaclBox_Test: XCTestCase {
     
-    public var data: [String]?
+    public var data: Array<String>?
+    private var nonce = Data(count: Constants.Box.nonceBytes)
+    
     
     override func setUp() {
         super.setUp()
@@ -25,22 +25,19 @@ class NaclSecretbox_Tests: XCTestCase {
         super.tearDown()
     }
     
-    func testSecretBox() {
-        let key = Data(base64Encoded: data![0])!
-        let nonce = Data(base64Encoded: data![1])!
-        let encodedMessage = data![2]
-        let msg = Data(base64Encoded: encodedMessage)!
+    func testBox() {
+        let pk = Data(base64Encoded: data![0])!
+        let sk = Data(base64Encoded: data![1])!
+        let msg = Data(base64Encoded: data![2])!
         let goodBox = data![3]
         
         do {
-            let box = try NaclSecretBox.secretBox(message: msg, nonce: nonce, key: key)
+            let box = try NaclBox.box(message: msg, nonce: nonce, publicKey: pk, secretKey: sk)
             let boxEncoded = box.base64EncodedString()
+            let open = try NaclBox.open(message: box, nonce: nonce, publicKey: pk, secretKey: sk)
             
             XCTAssertEqual(boxEncoded, goodBox)
-            
-            let openedBox = try NaclSecretBox.open(box: box, nonce: nonce, key: key)
-            XCTAssertNotNil(openedBox)
-            XCTAssertEqual(openedBox.base64EncodedString(), encodedMessage)
+            XCTAssertEqual(open, msg)
         }
         catch {
             XCTFail()
@@ -50,10 +47,10 @@ class NaclSecretbox_Tests: XCTestCase {
     override class var defaultTestSuite: XCTestSuite {
         
         let testSuite = XCTestSuite(name: NSStringFromClass(self))
-        let fileURL = Bundle.module.url(forResource: "SecretboxTestData", withExtension: "json")
+        let fileURL = Bundle.module.url(forResource: "BoxTestData", withExtension: "json")
         let fileData = try! Data(contentsOf: fileURL!)
-        let jsonDecoder = JSONDecoder()
-        let arrayOfData = try! jsonDecoder.decode([[String]].self, from: fileData)
+        let json = try! JSONSerialization.jsonObject(with: fileData, options: [])
+        let arrayOfData = json as! [Array<String>]
         
         for array in arrayOfData {
             addTestsWithArray(array: array, toTestSuite: testSuite)
@@ -69,7 +66,7 @@ class NaclSecretbox_Tests: XCTestCase {
             
             // We can't directly use the NSInvocation type in our source, but it appears
             // that we can pass it on through.
-            let testCase = NaclSecretbox_Tests(invocation: invocation)
+            let testCase = NaclBox_Test(invocation: invocation)
             
             // Normally the "parameterized" values are passed during initialization.
             // This is a "good enough" workaround. You'll see that I simply force unwrap

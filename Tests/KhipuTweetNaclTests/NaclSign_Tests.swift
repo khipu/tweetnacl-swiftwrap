@@ -7,7 +7,7 @@
 //
 
 import XCTest
-@testable import TweetNacl
+@testable import KhipuTweetNacl
 
 class NaclSign_Test: XCTestCase {
     

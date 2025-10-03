@@ -1,30 +1,33 @@
 // swift-tools-version:5.5
-// The swift-tools-version declares the minimum version of Swift required to build this package.
-
 import PackageDescription
 
 let package = Package(
-    name: "TweetNacl",
+    name: "KhipuTweetNacl",
+    platforms: [
+        .iOS(.v12)
+    ],
     products: [
         .library(
-            name: "TweetNacl",
-            targets: ["TweetNacl"]),
+            name: "KhipuTweetNacl",
+            targets: ["KhipuTweetNacl"]
+        ),
     ],
     dependencies: [],
     targets: [
+        // Target C: expone ctweetnacl.h a SwiftPM
         .target(
             name: "CTweetNacl",
-            publicHeadersPath: "include",
-            cSettings: [
-                .headerSearchPath("include")
-            ]
+            publicHeadersPath: "." // usa el header donde está (p.ej. Sources/CTweetNacl/ctweetnacl.h)
         ),
+        // Wrapper Swift (depende del C)
         .target(
-            name: "TweetNacl",
-            dependencies: ["CTweetNacl"]),
+            name: "KhipuTweetNacl",
+            dependencies: ["CTweetNacl"]
+        ),
+        // Tests (ajusta nombres/paths si difieren)
         .testTarget(
-            name: "TweetNaclTests",
-            dependencies: ["TweetNacl"],
+            name: "KhipuTweetNaclTests",
+            dependencies: ["KhipuTweetNacl"],
             resources: [
                 .process("SecretboxTestData.json"),
                 .process("BoxTestData.json"),
@@ -34,3 +37,4 @@ let package = Package(
         ),
     ]
 )
+

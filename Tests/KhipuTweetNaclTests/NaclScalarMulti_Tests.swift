@@ -7,7 +7,7 @@
 //
 
 import XCTest
-@testable import TweetNacl
+@testable import KhipuTweetNacl
 
 class NaclScalarMulti_Tests: XCTestCase {
     public var data: Array<String>?
