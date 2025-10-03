@@ -76,8 +76,7 @@ class NaclScalarMulti_Tests: XCTestCase {
     override class var defaultTestSuite: XCTestSuite {
         
         let testSuite = XCTestSuite(name: NSStringFromClass(self))
-        let testBundle = Bundle(for: NaclSecretbox_Tests.self)
-        let fileURL = testBundle.url(forResource: "ScalarMultiTestData", withExtension: "json")
+        let fileURL = Bundle.module.url(forResource: "ScalarMultiTestData", withExtension: "json")
         let fileData = try! Data(contentsOf: fileURL!)
         let json = try! JSONSerialization.jsonObject(with: fileData, options: [])
         let arrayOfData = json as! [Array<String>]

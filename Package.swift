@@ -12,7 +12,13 @@ let package = Package(
     ],
     dependencies: [],
     targets: [
-        .target(name: "CTweetNacl"),
+        .target(
+            name: "CTweetNacl",
+            publicHeadersPath: "include",
+            cSettings: [
+                .headerSearchPath("include")
+            ]
+        ),
         .target(
             name: "TweetNacl",
             dependencies: ["CTweetNacl"]),

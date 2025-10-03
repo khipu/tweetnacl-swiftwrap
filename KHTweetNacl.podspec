@@ -11,10 +11,19 @@ Pod::Spec.new do |s|
   s.social_media_url   = "https://twitter.com/bitmarkinc"
   s.ios.deployment_target = "12.0"
   s.source       = { :git => "https://github.com/khipu/tweetnacl-swiftwrap.git", :tag => s.version }
-  s.source_files  = "Sources/**/*.{h,c,swift}"
-  s.private_header_files = 'Sources/CTweetNacl/include/*.h'
-  s.preserve_paths = 'Sources/module.map'
+
+  s.source_files = "Sources/**/*.{h,c,swift}"
+  s.public_header_files = "Sources/TweetNacl/TweetNacl.h"
+  s.preserve_paths = "Sources/CTweetNacl/include/module.modulemap"
+
+  s.pod_target_xcconfig = {
+    'SWIFT_INCLUDE_PATHS' => '$(PODS_TARGET_SRCROOT)/Sources/CTweetNacl/include'
+  }
+
+  s.user_target_xcconfig = {
+    'SWIFT_INCLUDE_PATHS' => '"${PODS_ROOT}/KHTweetNacl/Sources/CTweetNacl/include"'
+  }
+
   s.frameworks  = "Foundation"
-  s.xcconfig = { 'SWIFT_INCLUDE_PATHS' => '$(PODS_ROOT)/KHTweetNacl/Sources' }
   s.swift_version = "5.0"
 end
