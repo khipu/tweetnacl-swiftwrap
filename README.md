@@ -1,4 +1,11 @@
 # TweetNacl
+
+## Do not use it
+
+Use https://github.com/khipu/TweetNaclSwift instead, that tweetnacl wrapper is compatible with xcode 26
+
+
+
 [TweetNaCl](http://tweetnacl.cr.yp.to) wrapper, written in Swift
 
 [![Build Status](https://travis-ci.org/bitmark-inc/tweetnacl-swiftwrap.svg?branch=master)](https://travis-ci.org/bitmark-inc/tweetnacl-swiftwrap) [![codecov](https://codecov.io/gh/bitmark-inc/tweetnacl-swiftwrap/branch/master/graph/badge.svg)](https://codecov.io/gh/bitmark-inc/tweetnacl-swiftwrap)
